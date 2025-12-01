@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
-    <!-- PREVENT ZOOM & FULL VIEW -->
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Register - Visitor Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -53,7 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         --text-input-dark: #e9ecef;
     }
 
-    /* BODY WITH TOP & BOTTOM SPACE */
     body {
         background: var(--bg-light);
         color: var(--text-light);
@@ -100,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
 
-    /* TOGGLE BUTTON */
     .toggle-btn {
         position: fixed;
         top: 1.5rem;
@@ -190,7 +188,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         color: var(--label-dark);
     }
 
-    /* INPUT GROUP — PERFECT ALIGNMENT */
     .input-group {
         height: var(--input-height);
         margin-bottom: 0.9rem;

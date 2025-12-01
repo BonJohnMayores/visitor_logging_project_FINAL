@@ -2,7 +2,6 @@
 require_once 'functions.php';
 require_login();
 
-// === HANDLE DELETE INLINE ===
 $msg = $msg_type = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     $id = (int)$_POST['delete_id'];
