@@ -115,11 +115,12 @@ body {
 }
 
 .user-info h6 {
-    margin: 0;
+    margin-left: 30px;
     font-size: .95rem;
 }
 
 .user-info small {
+    margin-left: 30px;
     opacity: .8;
     font-size: .8rem;
 }

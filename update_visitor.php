@@ -57,9 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h4><i class="bi bi-journal-text"></i> <span>Visitor Log</span></h4>
         </div>
         <div class="user-profile">
-            <div class="user-avatar">AD</div>
+            <div class="user-avatar">
+                <i class="bi bi-person-fill"></i>
+            </div>
             <div class="user-info">
-                <h6>Admin</h6>
+                <h6>Welcome!</h6>
                 <small><?php echo htmlspecialchars($_SESSION['user_name']); ?></small>
             </div>
         </div>

@@ -28,11 +28,21 @@ function get_user_by_email($email){
 }
 
 function register_user($fullname, $email, $password){
+    // 1. Check if user already exists
+    if (get_user_by_email($email)) {
+        // You might return false, throw an exception, or return a specific error code
+        return false; // User already exists, don't proceed
+    }
+    
+    // 2. Proceed with registration if email is unique
     $db = db_connect();
     $hash = password_hash($password, PASSWORD_DEFAULT);
+    // Original INSERT query
     $stmt = $db->prepare('INSERT INTO users (fullname, email, password_hash) VALUES (?, ?, ?)');
     $stmt->bind_param('sss', $fullname, $email, $hash);
-    $ok = $stmt->execute();
+    
+    // Line 35 is where the execute happens (this is where the error occurred before the fix)
+    $ok = $stmt->execute(); 
     $stmt->close();
     return $ok;
 }
