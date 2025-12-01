@@ -14,15 +14,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     }
 }
 
-// === FETCH FILTERS ===
+/* ==================== FETCH FILTERS ==================== */
 $filters = [];
 if (!empty($_GET['from'])) $filters['from'] = $_GET['from'];
-if (!empty($_GET['to'])) $filters['to'] = $_GET['to'];
-if (!empty($_GET['q'])) $filters['q'] = $_GET['q'];
+if (!empty($_GET['to']))   $filters['to']   = $_GET['to'];
+if (!empty($_GET['q']))    $filters['q']    = $_GET['q'];
 if (!empty($_GET['limit'])) $filters['limit'] = (int)$_GET['limit'];
 
-$visitors = fetch_visitors($filters);  // NOW 100% FILTERS BY DATE
-$stats = stats_today();
+/* ==================== DATA ==================== */
+$visitors = fetch_visitors($filters);
+
+// ---- STATS: BASED ON VISIBLE ROWS (ROBUST) ----
+$stats = [
+    'total'         => count($visitors),
+    'exam_count'    => 0,
+    'visit_count'   => 0,
+    'inquiry_count' => 0,
+    'other_count'   => 0,
+    'other_total'   => 0
+];
+
+foreach ($visitors as $v) {
+    $purpose = trim(strtoupper($v['purpose'] ?? ''));
+    if ($purpose === 'EXAM') {
+        $stats['exam_count']++;
+    } elseif ($purpose === 'VISIT') {
+        $stats['visit_count']++;
+    } elseif ($purpose === 'INQUIRY') {
+        $stats['inquiry_count']++;
+    } else {
+        $stats['other_count']++;
+    }
+}
+$stats['other_total'] = $stats['visit_count'] + $stats['inquiry_count'] + $stats['other_count'];
+
+/* ==================== FILTER SUMMARY TEXT ==================== */
+$filter_summary = '';
+
+// Search term
+if (!empty($filters['q'])) {
+    $filter_summary .= htmlspecialchars($filters['q']);
+}
+
+// Date range
+if (!empty($filters['from']) || !empty($filters['to'])) {
+    if (!empty($filters['q'])) $filter_summary .= ' • ';
+    if (!empty($filters['from'])) {
+        $filter_summary .= 'From: ' . date('d M Y', strtotime($filters['from']));
+    }
+    if (!empty($filters['to'])) {
+        if (!empty($filters['from'])) $filter_summary .= ' • ';
+        $filter_summary .= 'To: ' . date('d M Y', strtotime($filters['to']));
+    }
+}
+
+// Entries
+if (!empty($filters['limit'])) {
+    if (!empty($filter_summary)) $filter_summary .= ' • ';
+    $filter_summary .= $stats['total'] . ' entries';
+}
+
+// If no filters, show nothing
+if (empty($filter_summary)) {
+    $filter_summary = '';
+} else {
+    $filter_summary = '<small class="d-block mt-2 opacity-75 text-white">' . $filter_summary . '</small>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,7 +119,7 @@ $stats = stats_today();
     body {
         background: var(--bg-light);
         color: var(--text-light);
-        transition: all 0.3s ease;
+        transition: all .3s;
         font-family: system-ui, -apple-system, sans-serif;
     }
 
@@ -71,10 +128,9 @@ $stats = stats_today();
         color: var(--text-dark);
     }
 
-    /* SIDEBAR */
     .sidebar {
         background: var(--sidebar-light);
-        transition: background 0.3s;
+        transition: background .3s;
     }
 
     .dark-mode .sidebar {
@@ -94,7 +150,7 @@ $stats = stats_today();
     .top-bar {
         background: var(--card-light);
         border: 1px solid var(--border-light);
-        transition: all 0.3s;
+        transition: all .3s;
     }
 
     .dark-mode .card,
@@ -143,10 +199,9 @@ $stats = stats_today();
 
     .dark-mode .btn-outline-secondary:hover {
         background: #495057;
-        color: white;
+        color: #fff;
     }
 
-    /* TABLE */
     .table {
         --bs-table-bg: transparent;
         --bs-table-striped-bg: var(--table-stripe-light);
@@ -167,10 +222,10 @@ $stats = stats_today();
         background: var(--table-header-light);
         color: #495057 !important;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: .85rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 0.75rem;
+        letter-spacing: .05em;
+        padding: .75rem;
         border-bottom: 2px solid var(--table-divider-light);
         border-right: 1px solid var(--table-divider-light);
     }
@@ -187,11 +242,11 @@ $stats = stats_today();
     }
 
     .table tbody td {
-        padding: 0.75rem;
+        padding: .75rem;
         vertical-align: middle;
         border-top: 1px solid var(--table-divider-light);
         border-right: 1px solid var(--table-divider-light);
-        font-size: 0.925rem;
+        font-size: .925rem;
         color: inherit !important;
     }
 
@@ -220,23 +275,22 @@ $stats = stats_today();
 
     .table-hover tbody tr:hover {
         background-color: var(--bs-table-hover-bg);
-        transition: background-color 0.2s ease;
+        transition: background-color .2s;
     }
 
     .table-sm th,
     .table-sm td {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
+        padding: .5rem .75rem;
+        font-size: .875rem;
     }
 
-    /* BUTTONS */
     .btn-update {
         background: #ffc107;
         color: #212529;
         border: none;
-        font-size: 0.8125rem;
-        padding: 0.35rem 0.65rem;
-        border-radius: 0.375rem;
+        font-size: .8125rem;
+        padding: .35rem .65rem;
+        border-radius: .375rem;
     }
 
     .btn-update:hover {
@@ -254,7 +308,6 @@ $stats = stats_today();
         color: #fff;
     }
 
-    /* LAYOUT */
     .sidebar {
         position: fixed;
         top: 0;
@@ -402,11 +455,10 @@ $stats = stats_today();
         box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
     }
 
-    /* FILTER BAR */
     .filter-bar {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: .75rem;
         align-items: center;
         margin-bottom: 1.25rem;
         justify-content: space-between;
@@ -414,7 +466,7 @@ $stats = stats_today();
 
     .filter-group {
         display: flex;
-        gap: 0.5rem;
+        gap: .5rem;
         align-items: center;
     }
 
@@ -424,8 +476,8 @@ $stats = stats_today();
         margin: 0;
     }
 
-    .filter-group input[type="date"],
-    .filter-group input[type="text"],
+    .filter-group input[type=date],
+    .filter-group input[type=text],
     .filter-group .form-select {
         width: auto;
         min-width: 130px;
@@ -434,7 +486,7 @@ $stats = stats_today();
     .entries-select {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: .5rem;
         white-space: nowrap;
     }
 
@@ -448,13 +500,13 @@ $stats = stats_today();
         right: 1rem;
         z-index: 9999;
         min-width: 300px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
         border: none;
         border-radius: .75rem;
         font-weight: 500;
     }
 
-    @media (max-width: 992px) {
+    @media (max-width:992px) {
         .sidebar {
             width: 80px;
             padding: 1rem 0;
@@ -492,24 +544,21 @@ $stats = stats_today();
         <div class="user-profile">
             <div class="user-avatar">AD</div>
             <div class="user-info">
-                <h6>Admin</h6>
-                <small><?php echo htmlspecialchars($_SESSION['user_name']); ?></small>
+                <h6>Admin</h6><small><?php echo htmlspecialchars($_SESSION['user_name']); ?></small>
             </div>
         </div>
         <nav>
-            <a class="nav-link active" href="dashboard.php"><i class="bi bi-speedometer2"></i>
-                <span>Dashboard</span></a>
-            <a class="nav-link" href="add_visitor.php"><i class="bi bi-person-plus"></i> <span>Add Visitor</span></a>
-            <a class="nav-link" href="export.php"><i class="bi bi-file-earmark-arrow-down"></i> <span>Export
+            <a class="nav-link active" href="dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+            <a class="nav-link" href="add_visitor.php"><i class="bi bi-person-plus"></i><span>Add Visitor</span></a>
+            <a class="nav-link" href="export.php"><i class="bi bi-file-earmark-arrow-down"></i><span>Export
                     CSV</span></a>
-            <a class="nav-link" href="logout.php"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a>
+            <a class="nav-link" href="logout.php"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a>
         </nav>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
 
-        <!-- ALERT -->
         <?php if ($msg): ?>
         <div class="alert alert-<?php echo $msg_type; ?> alert-dismissible fade show alert-floating" role="alert">
             <i class="bi <?php echo $msg_type === 'success' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'; ?> me-2"></i>
@@ -518,54 +567,56 @@ $stats = stats_today();
         </div>
         <?php endif; ?>
 
-        <!-- Top Bar -->
         <div class="top-bar">
             <h3>Visitor Log</h3>
             <div class="user-info">
                 <span>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
-                <button id="theme-toggle" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-moon-stars-fill"></i>
-                </button>
+                <button id="theme-toggle" class="btn btn-outline-secondary btn-sm"><i
+                        class="bi bi-moon-stars-fill"></i></button>
                 <a href="logout.php" class="btn btn-outline-danger btn-sm">Logout</a>
             </div>
         </div>
 
-        <!-- Stat Cards -->
+        <!-- ==================== STAT CARDS (WITH FILTER SUMMARY) ==================== -->
         <div class="stat-cards">
-            <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8, #0d6efd);">
+
+            <!-- TOTAL VISIBLE VISITORS + FILTER SUMMARY -->
+            <div class="stat-card" style="background:linear-gradient(135deg,#17a2b8,#0d6efd);">
                 <i class="bi bi-people-fill icon"></i>
-                <h3><?php echo intval($stats['total'] ?? 0); ?></h3>
-                <p>Total Visitors Today</p>
+                <h3><?php echo $stats['total']; ?></h3>
+                <p>Total Visitors</p>
+                <?php echo $filter_summary; ?>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+
+            <!-- EXAM -->
+            <div class="stat-card" style="background:linear-gradient(135deg,#28a745,#20c997);">
                 <i class="bi bi-journal-check icon"></i>
-                <h3><?php echo intval($stats['exam_count'] ?? 0); ?></h3>
+                <h3><?php echo $stats['exam_count']; ?></h3>
                 <p>EXAM</p>
-                <small class="d-block mt-1 opacity-75"><?php echo intval($stats['exam_count'] ?? 0); ?> visitor(s) for
-                    exam</small>
+                <!--   <small class="d-block mt-1 opacity-75"><?php echo $stats['exam_count']; ?> visible</small>  -->
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+
+            <!-- OTHER PURPOSES -->
+            <div class="stat-card" style="background:linear-gradient(135deg,#ffc107,#fd7e14);">
                 <i class="bi bi-chat-dots icon"></i>
-                <h3><?php 
-                    $other = (intval($stats['visit_count'] ?? 0) + intval($stats['inquiry_count'] ?? 0) + intval($stats['other_count'] ?? 0));
-                    echo $other;
-                ?></h3>
+                <h3><?php echo $stats['other_total']; ?></h3>
                 <p>Other Purposes</p>
                 <small class="d-block mt-1 opacity-75">
-                    Visit: <?php echo intval($stats['visit_count'] ?? 0); ?> ·
-                    Inquiry: <?php echo intval($stats['inquiry_count'] ?? 0); ?> ·
-                    Other: <?php echo intval($stats['other_count'] ?? 0); ?>
+                    Visit: <?php echo $stats['visit_count']; ?> •
+                    Inquiry: <?php echo $stats['inquiry_count']; ?> •
+                    Other: <?php echo $stats['other_count']; ?>
                 </small>
             </div>
+
         </div>
 
-        <!-- Table with WORKING Date Range Filter -->
+        <!-- ==================== TABLE + FILTER ==================== -->
         <div class="table-card">
             <form class="filter-bar" method="get" id="filterForm">
                 <div class="entries-select">
                     <label>Show</label>
                     <select class="form-select" name="limit" onchange="this.form.submit()">
-                        <option value="5" <?php echo ($_GET['limit'] ?? '') == '5' ? 'selected' : ''; ?>>5</option>
+                        <option value="5" <?php echo ($_GET['limit'] ?? '') == '5'  ? 'selected' : ''; ?>>5</option>
                         <option value="10" <?php echo ($_GET['limit'] ?? '10') == '10' ? 'selected' : ''; ?>>10</option>
                         <option value="25" <?php echo ($_GET['limit'] ?? '') == '25' ? 'selected' : ''; ?>>25</option>
                         <option value="50" <?php echo ($_GET['limit'] ?? '') == '50' ? 'selected' : ''; ?>>50</option>
@@ -601,7 +652,7 @@ $stats = stats_today();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach($visitors as $v): ?>
+                        <?php foreach ($visitors as $v): ?>
                         <tr>
                             <td><?php echo date('d M Y', strtotime($v['visit_date'])); ?></td>
                             <td><?php echo date('h:i A', strtotime($v['visit_time'])); ?></td>
@@ -619,10 +670,9 @@ $stats = stats_today();
                             </td>
                         </tr>
                         <?php endforeach; ?>
-                        <?php if(empty($visitors)): ?>
+                        <?php if (empty($visitors)): ?>
                         <tr>
-                            <td colspan="7" class="text-muted text-center py-3">No records found for selected date
-                                range.</td>
+                            <td colspan="7" class="text-muted text-center py-3">No records found.</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -633,7 +683,6 @@ $stats = stats_today();
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Theme Toggle
     const toggle = document.getElementById('theme-toggle');
     const body = document.body;
     const icon = toggle.querySelector('i');
@@ -655,7 +704,6 @@ $stats = stats_today();
         }
     });
 
-    // Auto-dismiss alert
     document.querySelectorAll('.alert').forEach(alert => {
         setTimeout(() => new bootstrap.Alert(alert).close(), 4000);
     });
